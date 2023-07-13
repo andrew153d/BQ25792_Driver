@@ -51,23 +51,27 @@ void BQ25792::begin()
     attachInterrupt(BCIN_Pin, chargerInturruptCallback, CHANGE);
 }
 
-bool BQ25792::flashChargeLevel(uint16_t pinToFlash, int totalDuration, uint16_t cycles){
+bool BQ25792::flashChargeLevel(uint16_t pinToFlash, int totalDuration, uint16_t cycles)
+{
     float vBat = getVBAT();
     float min = getVSYSMIN();
     float max = getChargeVoltageLimit();
-    
+
     float onTime = -1000;
-    float offTime = 2000; totalDuration-onTime;
-    while(onTime<0 || onTime > 1000){
+    float offTime = 2000;
+    totalDuration - onTime;
+    while (onTime < 0 || onTime > 1000)
+    {
         vBat = getVBAT();
-        onTime = map(vBat*100, min*100, max*100, 0, totalDuration);
+        onTime = map(vBat * 100, min * 100, max * 100, 0, totalDuration);
         DEBUG_PRINTLN("Trying");
         delay(1000);
     }
-        offTime = totalDuration-onTime;
+    offTime = totalDuration - onTime;
     DEBUG_PRINTF("Vbat: %.1f   Min: %.1f   Max: %.1f\n", vBat, min, max);
     DEBUG_PRINTF("ON: %.1f  OFF:%.1f\n", onTime, offTime);
-    for(int i = 0; i<cycles; i++){
+    for (int i = 0; i < cycles; i++)
+    {
         digitalWrite(pinToFlash, HIGH);
         delay(onTime);
         digitalWrite(pinToFlash, LOW);
@@ -75,6 +79,41 @@ bool BQ25792::flashChargeLevel(uint16_t pinToFlash, int totalDuration, uint16_t 
     }
 
     return true;
+}
+
+String BQ25792::getChargeStatus()
+{
+ 
+
+    switch((uint8_t)getChargeStatus0()){
+        case 0x0:
+            return String("Not Charging");
+        break;
+        case 0x1:
+            return String("Trickle Charge");
+        break;
+        case 0x2:
+            return String("Precharge");
+        break;
+        case 0x3:
+            return String("Fast Charge");
+        break;
+        case 0x4:
+            return String("Taper Charge");
+        break;
+        case 0x5:
+            return String("Reserved");
+        break;
+        case 0x6:
+            return String("Top Off");
+        break;
+        case 0x7:
+            return String("Charging Done");
+        break;
+    }
+   
+
+   return String("noipe");
 }
 
 float BQ25792::getVSYSMIN()
@@ -183,7 +222,8 @@ void BQ25792::setInputCurrentLimit(float limit)
     writeBytes(REG06_Input_Current_Limit, &buf[0], 2);
 }
 
-precharge_control BQ25792::getPrechargeControl(){
+precharge_control BQ25792::getPrechargeControl()
+{
     // Page 60
     // https://www.ti.com/lit/ds/symlink/bq25792.pdf?HQS=dis-dk-null-digikeymode-dsf-pf-null-wwe&ts=1685315646335
 
@@ -194,18 +234,21 @@ precharge_control BQ25792::getPrechargeControl(){
     return cntrl;
 }
 
-void BQ25792::setPreChargeControl(precharge_control *cntrl){
+void BQ25792::setPreChargeControl(precharge_control *cntrl)
+{
     uint8_t data = (cntrl->Vbat_lowV << 6) | ((uint8_t)(cntrl->Iprechrg * 1000 / 40) & 0x3F);
     writeByte(REG08_Precharge_Control, data);
 }
 
-bool BQ25792::isPluggedIn(){
+bool BQ25792::isPluggedIn()
+{
     charger_status_0 status;
     status.raw = readByte(REG1B_Charger_Status_0);
     return status.VBUS_PRESENT_STAT;
 }
 
-CHG_STAT BQ25792::getChargeStatus0(){
+CHG_STAT BQ25792::getChargeStatus0()
+{
     CHG_STAT stat;
     uint8_t data = readByte(REG1C_Charger_Status_1);
     data = (data >> 5) & 0x07;
@@ -213,7 +256,8 @@ CHG_STAT BQ25792::getChargeStatus0(){
     return stat;
 }
 
-VBUS_STAT BQ25792::getVBUStatus(){
+VBUS_STAT BQ25792::getVBUStatus()
+{
     VBUS_STAT stat;
     uint8_t data = readByte(REG1C_Charger_Status_1);
     data = (data >> 1) & 0b00001111;
@@ -221,11 +265,13 @@ VBUS_STAT BQ25792::getVBUStatus(){
     return stat;
 }
 
-bool BQ25792::isBatteryPresent(){
+bool BQ25792::isBatteryPresent()
+{
     return readByte(REG1D_Charger_Status_2) & 0x01;
 }
 
-bool BQ25792::isErrorPresent(){
+bool BQ25792::isErrorPresent()
+{
     uint8_t err = readByte(REG20_FAULT_Status_0) | readByte(REG21_FAULT_Status_1);
     return err > 0;
 }
@@ -235,28 +281,30 @@ float BQ25792::getVBAT()
     writeByte(REG2F_ADC_Function_Disable_0, 0b10001111);
     writeByte(REG30_ADC_Function_Disable_1, 0b11111111);
     writeByte(REG2E_ADC_Control, 0b10001100);
-    
+
     uint8_t buf[2];
     readBytes(REG3B_VBAT_ADC, &buf[0], 2);
     uint16_t v;
 
-    return (float)(((buf[0]) << 8) | buf[1])/1000;
-
+    return (float)(((buf[0]) << 8) | buf[1]) / 1000;
 }
 
-void BQ25792::setCellCount(uint8_t cells){
+void BQ25792::setCellCount(uint8_t cells)
+{
     uint8_t currentConfig = readByte(REG0A_Recharge_Control);
-    currentConfig |= (cells<<6);
+    currentConfig |= (cells << 6);
     writeByte(REG0A_Recharge_Control, currentConfig);
 }
 
-float twosComplementToFloat(int16_t value) {
-    int16_t mask = 0x8000;  // Mask for the sign bit
+float twosComplementToFloat(int16_t value)
+{
+    int16_t mask = 0x8000; // Mask for the sign bit
     int16_t sign = value & mask;
     int16_t magnitude = value & ~mask;
     float result = static_cast<float>(magnitude);
 
-    if (sign != 0) {
+    if (sign != 0)
+    {
         // Value is negative, convert it to negative float
         result = -result;
     }
@@ -264,9 +312,10 @@ float twosComplementToFloat(int16_t value) {
     return result;
 }
 
-float BQ25792::getIBUS(){
+float BQ25792::getIBUS()
+{
     writeByte(REG2E_ADC_Control, 0b10001100);
-    
+
     uint8_t buf[2];
     readBytes(REG31_IBUS_ADC, &buf[0], 2);
     int16_t val = (float)(((buf[0]) << 8) | buf[1]);
@@ -275,7 +324,6 @@ float BQ25792::getIBUS(){
 
 void BQ25792::getVBATReadDone()
 {
-   
 }
 
 void BQ25792::resetPower()
@@ -283,7 +331,8 @@ void BQ25792::resetPower()
     writeByte(REG11_Charger_Control_2, 0b01000111);
 }
 
-uint8_t BQ25792::getDeviceInfo(){
+uint8_t BQ25792::getDeviceInfo()
+{
     return readByte(REG48_Part_Information);
 }
 

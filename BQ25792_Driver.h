@@ -2,7 +2,7 @@
 #define BQ25792_H
 #include <Arduino.h>
 #include <Wire.h>
-
+#include <string>
 
 #define DEVICEADDRESS 0x6B
 
@@ -28,7 +28,8 @@ typedef union
     };
 } charger_status_0;
 
-enum class CHG_STAT : uint8_t{
+enum class CHG_STAT : uint8_t
+{
     NOT_CHARGING = 0x0,
     TRICKLE_CHARGE = 0x1,
     PRECHARGE = 0x2,
@@ -38,7 +39,9 @@ enum class CHG_STAT : uint8_t{
     CHARGEDONE = 0x7
 };
 
-enum class VBUS_STAT : uint8_t{
+
+enum class VBUS_STAT : uint8_t
+{
     NOINPUT = 0x0,
     USB_SDP_500MA = 0x1,
     USB_CDP_1500MA = 0x2,
@@ -104,8 +107,8 @@ enum class VBUS_STAT : uint8_t{
 #define REG3D_VSYS_ADC 0x3D
 #define REG3F_TS_ADC 0x3F
 #define REG41_TDIE_ADC 0x41
-#define REG43_D+_ADC 0x43
-#define REG45_D-_ADC 0x45
+#define REG43_D +_ADC 0x43
+#define REG45_D -_ADC 0x45
 #define REG47_DPDM_Driver 0x47
 #define REG48_Part_Information 0x48
 
@@ -123,17 +126,19 @@ private:
 public:
     BQ25792(int _BCIN, int _QON);
 
-    //wrapper functions
+    // wrapper functions
     void begin();
     bool flashChargeLevel(uint16_t pinToFlash, int totalDuration = 500, uint16_t cycles = 4);
+    
+    String getChargeStatus();
 
-    //Register Access Functions
+    // Register Access Functions
     float getVSYSMIN();
     void setVSYSMIN(uint8_t vsys);
 
     uint8_t getCellCount();
     void setCellCount2(uint8_t cells);
-    
+
     float getChargeVoltageLimit();
     void setChargeVoltageLimit(float limit);
 
@@ -164,7 +169,7 @@ public:
 
     float getVBAT();
     float getIBUS();
-    
+
     void resetPower();
 
     uint8_t getDeviceInfo();
